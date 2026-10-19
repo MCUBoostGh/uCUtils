@@ -55,7 +55,7 @@ typedef struct {
 
 #define return_(_status, _value)                                    \
     do {                                                            \
-        log_debug("%s: return %s with value = %d",                  \
+        log_trace("%s: return %s with value = %d",                  \
                   __func__, #_status, (int)(_value));               \
         return_t _ret = {                                           \
             .status = (_status),                                    \
