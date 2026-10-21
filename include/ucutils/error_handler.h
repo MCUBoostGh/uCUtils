@@ -16,8 +16,8 @@
  * ==========================================================
  */
 
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "logging.h"
 
@@ -31,12 +31,14 @@
  *  NOTE:
  *      0 == success aligns with POSIX / Linux convention.
  * ========================================================== */
-typedef enum {
+typedef enum
+{
     STATUS_SUCCESS = 0, /* no error */
     STATUS_FAILURE = 1,
 } status_e;
 
-typedef struct {
+typedef struct
+{
     status_e status;
     int32_t  value; /* payload on success, error code on failure */
 } return_t;
@@ -53,34 +55,41 @@ typedef struct {
  *    - Are statement-safe
  * ========================================================== */
 
-#define return_(_status, _value)                                    \
-    do {                                                            \
-        log_trace("%s: return %s with value = %d",                  \
-                  __func__, #_status, (int)(_value));               \
-        return_t _ret = {                                           \
-            .status = (_status),                                    \
-            .value  = (_value),                                     \
-        };                                                          \
-        return _ret;                                                \
-    } while (0)
+#define return_(_status, _value)                                                         \
+    do                                                                                   \
+    {                                                                                    \
+        log_trace("%s: return %s with value = %d", __func__, #_status, (int)(_value));   \
+        return_t _ret = {                                                                \
+            .status = (_status),                                                         \
+            .value = (_value),                                                           \
+        };                                                                               \
+        return _ret;                                                                     \
+    }                                                                                    \
+    while (0)
 
-#define return_failure(_error_code)                                 \
-    do {                                                            \
-        log_fail("%s: execution failed", __func__);                 \
-        return_(STATUS_FAILURE, _error_code);                       \
-    } while (0)
+#define return_failure(_error_code)                                                      \
+    do                                                                                   \
+    {                                                                                    \
+        log_fail("%s: execution failed", __func__);                                      \
+        return_(STATUS_FAILURE, _error_code);                                            \
+    }                                                                                    \
+    while (0)
 
-#define return_success()                                          \
-    do {                                                            \
-        log_success("%s: completed successfully", __func__);      \
-        return_(STATUS_SUCCESS, 0);                                 \
-    } while (0)
+#define return_success()                                                                 \
+    do                                                                                   \
+    {                                                                                    \
+        log_success("%s: completed successfully", __func__);                             \
+        return_(STATUS_SUCCESS, 0);                                                      \
+    }                                                                                    \
+    while (0)
 
-#define return_value(_value)                                      \
-    do {                                                            \
-        log_success("%s: completed successfully", __func__);      \
-        return_(STATUS_SUCCESS, _value);                            \
-    } while (0)
+#define return_value(_value)                                                             \
+    do                                                                                   \
+    {                                                                                    \
+        log_success("%s: completed successfully", __func__);                             \
+        return_(STATUS_SUCCESS, _value);                                                 \
+    }                                                                                    \
+    while (0)
 
 /* ==========================================================
  *  Panic handling
@@ -103,71 +112,88 @@ typedef struct {
 #define PANIC_ACT exit(EXIT_FAILURE)
 #endif
 
-__attribute__((noreturn)) static inline void panic_impl(const char *file,
-                                                        const char *func,
-                                                        int line,
-                                                        const char *reason)
+__attribute__((noreturn)) static inline void
+panic_impl(const char *file, const char *func, int line, const char *reason)
 {
     log_error("PANIC at %s:%d (%s) | %s", file, line, func, reason);
     PANIC_ACT;
-    while (1) {
+    while (1)
+    {
     }
 }
 
-#define panic(reason) \
-    panic_impl(__FILE__, __func__, __LINE__, (reason))
+#define panic(reason) panic_impl(__FILE__, __func__, __LINE__, (reason))
 
-#define panic_if(cond)              \
-    do {                            \
-        if (cond) {                 \
-            panic(#cond);           \
-        }                           \
-    } while (0)
+#define panic_if(cond, msg)                                                              \
+    do                                                                                   \
+    {                                                                                    \
+        if (cond)                                                                        \
+        {                                                                                \
+            log_error(msg);                                                              \
+            panic(#cond);                                                                \
+        }                                                                                \
+    }                                                                                    \
+    while (0)
 
 /* ==========================================================
  *  Conditional return helpers
  * ========================================================== */
 
-#define return_fail_if(_cond, _error)                               \
-    do {                                                            \
-        if (_cond) {                                                \
-            log_error("Condition failed: %s", #_cond);              \
-            return_failure(_error);                                 \
-        }                                                           \
-    } while (0)
+#define return_fail_if(_cond, _error)                                                    \
+    do                                                                                   \
+    {                                                                                    \
+        if (_cond)                                                                       \
+        {                                                                                \
+            log_error("Condition failed: %s", #_cond);                                   \
+            return_failure(_error);                                                      \
+        }                                                                                \
+    }                                                                                    \
+    while (0)
 
-#define return_on_fail(expr)                                        \
-    do {                                                            \
-        return_t _ret = (expr);                                     \
-        if (return_is_failure(_ret)) {                              \
-            log_error("Failure in: %s", #expr);                     \
-            return _ret;                                            \
-        }                                                           \
-    } while (0)
+#define return_on_fail(expr)                                                             \
+    do                                                                                   \
+    {                                                                                    \
+        return_t _ret = (expr);                                                          \
+        if (return_is_failure(_ret))                                                     \
+        {                                                                                \
+            log_error("Failure in: %s", #expr);                                          \
+            return _ret;                                                                 \
+        }                                                                                \
+    }                                                                                    \
+    while (0)
 
-#define exit_on_fail(expr)                                          \
-    do {                                                            \
-        return_t _ret = (expr);                                     \
-        if (return_is_failure(_ret)) {                              \
-            log_error("Failure in: %s", #expr);                     \
-            exit(EXIT_FAILURE);                                     \
-        }                                                           \
-    } while (0)
+#define exit_on_fail(expr)                                                               \
+    do                                                                                   \
+    {                                                                                    \
+        return_t _ret = (expr);                                                          \
+        if (return_is_failure(_ret))                                                     \
+        {                                                                                \
+            log_error("Failure in: %s", #expr);                                          \
+            exit(EXIT_FAILURE);                                                          \
+        }                                                                                \
+    }                                                                                    \
+    while (0)
 
-#define return_null_if(cond)                                        \
-    do {                                                            \
-        if (cond) {                                                 \
-            log_error("Condition failed: %s", #cond);               \
-            return NULL;                                            \
-        }                                                           \
-    } while (0)
+#define return_null_if(cond)                                                             \
+    do                                                                                   \
+    {                                                                                    \
+        if (cond)                                                                        \
+        {                                                                                \
+            log_error("Condition failed: %s", #cond);                                    \
+            return NULL;                                                                 \
+        }                                                                                \
+    }                                                                                    \
+    while (0)
 
-#define goto_cleanup_if(cond)                                       \
-    do {                                                            \
-        if (cond) {                                                 \
-            log_error("Condition failed: %s", #cond);               \
-            goto cleanup;                                           \
-        }                                                           \
-    } while (0)
+#define goto_cleanup_if(cond)                                                            \
+    do                                                                                   \
+    {                                                                                    \
+        if (cond)                                                                        \
+        {                                                                                \
+            log_error("Condition failed: %s", #cond);                                    \
+            goto cleanup;                                                                \
+        }                                                                                \
+    }                                                                                    \
+    while (0)
 
 #endif /* UCUTILS_ERROR_HANDLER_H */
