@@ -46,21 +46,43 @@ First public release. Establishes the core diagnostics foundation: logging macro
 - Optional examples (`UCUTILS_BUILD_EXAMPLES`, default OFF)
 - C11 required; no `.c` source files to link
 
-### Not in v0.2.0 (planned)
-
-| Feature | Target |
-|---------|--------|
-| Lightweight formatter (replace `printf`) | v0.2.x |
-| Ring buffer for async logging | v0.3.0 |
-| Timestamps in log lines | v0.3.0 |
-| Assert / fault handler module | v0.3.0 |
-
 ### New in v0.2.0
 
 - **`install.sh`** — configure, build, test, and install for host and ARM Cortex-M presets
 - **Generic ARM toolchain** — [`cmake/gcc-arm-none-eabi.cmake`](cmake/gcc-arm-none-eabi.cmake) (consumer sets CPU/FPU/linker script)
 - **Log sinks** — `LOG_SINK_STDIO`, `LOG_SINK_UART`, `LOG_SINK_ITM` for STM32 + GCC
 - **UART handle required** — `UCUTILS_UART_HANDLE` must be set in your project CMake (no silent default)
+
+## TODO
+
+Planned modules stay header-only, use no heap, and work on host and Cortex-M. Implement in the order below.
+
+### v0.2.x
+
+- [ ] **Lightweight formatter** (`include/ucutils/format.h`) — `%d`, `%u`, `%x`, `%s`, `%p`. Log macros format through it, so `LOG_LEVEL_NONE` does not pull in `printf` / newlib stdio. `LOG_WRITE` stays the sink hook.
+
+### v0.3.0
+
+- [ ] **Assert module** (`include/ucutils/assert.h`) — `UCUTILS_ASSERT(cond)` panics in debug and compiles out in release.
+- [ ] **Cortex-M fault capture** — on HardFault, log CFSR, HFSR, and the stacked PC/LR, then run `PANIC_ACT`.
+- [ ] **`exit_on_fail` uses `PANIC_ACT`** — a startup failure on an MCU resets or spins instead of calling `exit`.
+- [ ] **Async log ring** (`include/ucutils/ringbuf.h`) — static byte ring with drop-oldest or drop-newest. Log macros push; the main loop or DMA drains. Reusable outside logging. Guarded by `UCUTILS_ENTER_CRITICAL` / `UCUTILS_EXIT_CRITICAL`.
+- [ ] **Timestamps** — prefix each log line from a user tick hook (`ucutils_now_ms`).
+- [ ] **Typed error codes** (`include/ucutils/error.h`) — `UCUTILS_ERR_INVAL`, `TIMEOUT`, `BUSY`, `IO`, `NOMEM`, `OVERFLOW`, plus `ucutils_strerror()`. Names print in debug and compile down to the integer in production.
+- [ ] **Log once, every N, and hex dump** — `log_error_once`, `log_every`, `log_hex` so a failing poll loop does not flood the UART.
+- [ ] **Runtime log level** — compile-time ceiling still strips unused levels; a runtime filter can raise verbosity up to that ceiling without a rebuild.
+
+### v0.4.0
+
+- [ ] **Tick and timeout helper** (`include/ucutils/time.h`) — `ucutils_now_ms()`, `ucutils_timeout_set`, `ucutils_timeout_expired`. A timeout returns `return_failure(UCUTILS_ERR_TIMEOUT)`.
+- [ ] **Generic byte sink** — `LOG_SINK_CALLBACK` and `ucutils_log_write(const char *ptr, int len)` for targets other than STM32 UART and ITM.
+- [ ] **Host log tests** — capture `LOG_WRITE` and check level stripping, the panic hook, and ring overflow.
+
+### Later
+
+- [ ] **Static memory pool** — fixed-block allocator, no `malloc`.
+- [ ] **Endian pack/unpack** — `ucutils_get_be16`, `ucutils_put_le32`, and the matching LE/BE helpers for protocol frames.
+- [ ] **Named cleanup** — `goto_cleanup_if` takes a label so a function can have more than one cleanup path.
 
 ## What
 
